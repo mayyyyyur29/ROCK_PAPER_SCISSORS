@@ -53,6 +53,7 @@ The fallback architecture means the game works even without an API key - you jus
 
 **Simple state model** - No conversation memory or history tracking. Each interaction is stateless except for game state. Keeps it simple but limits contextual awareness.
 
+**More conversational **-added small jokes or banter in between the replies to make conversation more intresting.
 
 
 ## What I'd Improve
