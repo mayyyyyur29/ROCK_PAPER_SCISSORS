@@ -53,7 +53,7 @@ The fallback architecture means the game works even without an API key - you jus
 
 **Simple state model** - No conversation memory or history tracking. Each interaction is stateless except for game state. Keeps it simple but limits contextual awareness.
 
-**Network latency** - AI calls add delays. Could cache common responses or use async calls, but kept it simple for now.
+
 
 ## What I'd Improve
 
