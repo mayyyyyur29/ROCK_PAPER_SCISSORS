@@ -1,0 +1,4 @@
+name: rps_plus_referee
+version: "1.0"
+description: "Rock–Paper–Scissors–Plus referee using Google ADK (Best of 3 rounds)"
+entrypoint: agent.root_agent

@@ -1,69 +1,113 @@
-# Rock-Paper-Scissors-Plus AI Referee
+# Rock-Paper-Scissors-Plus (ADK Version)
 
-A Python chatbot that referees Rock-Paper-Scissors-Plus games using Google's Gemini AI. It's got personality, makes jokes, and occasionally outsmarts you.
+An interactive conversational agent built using Google's **Agent Development Kit (ADK)**. It referees a 3-round Rock-Paper-Scissors-Plus match with witty commentary and strategic moves. Powered by Gemini and written entirely in Python.
 
-## Quick Start
+## 🌟 Features
 
-```bash
-pip install -r requirements.txt
-export GOOGLE_AI_API_KEY="your-key-here"  # optional but recommended
-python main.py
-```
-
-**Game Rules**: Rock > Scissors > Paper > Rock. Bomb beats everything but you only get one. 3 rounds, most points wins.
+* Natural-language move parsing ("I'll throw a rock!")
+* Strategic bot moves (smart use of Bomb!)
+* Fun, dynamic responses for each round
+* Game state stored between turns (via ADK session state)
+* Fully compatible with `adk web` and ADK Dev UI
 
 ---
 
-## State Model
+## 🚀 Quick Start
 
-The `GameState` class tracks everything in one place:
-- Round number (1-3)
-- Scores for user and bot
-- Bomb usage flags (one per player)
-- Game over status
+```bash
+pip install -r requirements.txt
+adk web
+```
 
-This centralized state makes the game logic predictable and easy to test. Every tool function takes state as input and returns updated state, keeping things functional and avoiding hidden mutations.
+Then open `http://127.0.0.1:8000` and launch the `rps_plus_referee` agent.
 
-## Agent & Tool Design
+**Optional**: To use Gemini AI for smarter intent parsing or response generation:
 
-### Tools (`adk_tools.py`)
-Three pure functions handle game mechanics:
-- `validate_move()` - Checks if a move is legal (mainly bomb usage)
-- `resolve_round()` - Determines round winner based on rules
-- `update_game_state()` - Returns new state after a round
+```bash
+export GOOGLE_API_KEY="your-key-here"
+```
 
-Clean separation means I can test game logic without touching the AI.
+## ⚖️ Game Rules
 
-### Agent (`agent.py`)
-The agent wraps Google's Gemini AI for three things:
+* Rock beats Scissors
+* Scissors beats Paper
+* Paper beats Rock
+* Bomb beats everything, but each player can only use it once
+* Invalid moves waste the round
+* Game lasts exactly 3 rounds
 
-1. **Intent Parsing** - Understands "throw a rock" or "I choose paper" instead of requiring exact keywords. Falls back to simple string matching if AI is down.
+---
 
-2. **Strategic Bot Moves** - AI analyzes game state (scores, bomb usage, round number) to pick smart moves instead of random ones. Falls back to random selection when needed.
+## 📊 State Model
 
-3. **Conversational Responses** - Generates witty, context-aware commentary. Falls back to basic templates without AI.
+The agent tracks game progress using ADK's session state:
 
-The fallback architecture means the game works even without an API key - you just lose the personality and strategy.
+```json
+{
+  "round": 1,
+  "user_score": 0,
+  "bot_score": 0,
+  "user_bomb_used": false,
+  "bot_bomb_used": false,
+  "game_over": false
+}
+```
 
-## Tradeoffs
+This keeps gameplay consistent and makes testing easy.
 
-**Added Google AI dependency** - Better gameplay and conversation, but requires API key and internet. I kept fallback logic so it still works offline, just less interesting.
+---
 
-**Random response variation** - Using random selection from AI-generated responses for replayability instead of deterministic output. Could be more sophisticated with conversation history.
+## 🧹 Agent Design
 
-**Simple state model** - No conversation memory or history tracking. Each interaction is stateless except for game state. Keeps it simple but limits contextual awareness.
+### Tools (inline in `agent.py`)
 
-**More conversational **-added small jokes or banter in between the replies to make conversation more intresting.
+* `tool_parse_intent()` — Extracts move from user input
+* `tool_validate_move()` — Validates move legality (e.g., bomb reuse)
+* `tool_resolve_round()` — Applies RPS+ rules to determine round outcome
+* `tool_update_game_state()` — Updates scores and flags based on the result
+* `tool_generate_response()` — Builds human-friendly responses with variation
 
+### Agent Callback Logic
 
-## What I'd Improve
+Defined in `before_agent_callback()`:
 
-**Conversation memory** - Track full conversation history to make AI responses more contextually aware instead of treating each turn independently.
+* Initializes state if first message
+* Parses user move
+* Computes and validates bot move
+* Resolves outcome
+* Updates state
+* Responds with rich commentary
 
-**Better strategy** - Right now the bot just asks AI for a move. Could implement actual game theory (Nash equilibrium mixed strategies, pattern detection in user behavior).
+Fallbacks are built-in:
 
-**Web interface** - Terminal is fine but a simple Flask app would be more accessible and could show game history visually.
+* If input parsing fails, round is wasted but game continues
+* If user types "restart" after game ends, state resets
 
-**Persistent stats** - Track win rates, favorite moves, longest streaks across sessions. Would make it feel more like a real game.
+---
 
-**Tests for AI components** - Current tests only cover deterministic game logic. Could mock AI responses to test parsing and response generation.
+## ⚖️ Tradeoffs & Design Decisions
+
+* **No LLM calls by default** — Designed to be fully functional without API key
+* **Simple game state only** — No conversation memory/history, just round-wise
+* **Random response variety** — Adds fun and replayability
+* **No external UI** — Uses ADK Dev UI for testing, easily extendable to web
+
+---
+
+## ✏️ What I'd Improve
+
+* Add memory of full move history for smarter AI
+* Improve bot strategy beyond random (e.g. Nash logic or pattern matching)
+* Extend to a visual or web UI (Flask/Tailwind)
+* Add stats tracking (wins, longest streak, bomb usage rate)
+* Include unit tests for tool functions and mocked callbacks
+
+---
+
+## 🔗 Related
+
+* Built with: [Google ADK](https://developers.generativeai.google/guide/adk)
+* AI model (optional): Gemini Flash / Pro
+* Format: One-agent file (`agent.py`) + `adk.yaml`
+
+Enjoy the game, and may your bombs be well-timed!
