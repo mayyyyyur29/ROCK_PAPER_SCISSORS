@@ -1,3 +1,4 @@
+import random
 from google.adk.agents.llm_agent import Agent
 from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
@@ -23,7 +24,7 @@ def tool_validate_move(move: str, state: dict) -> bool:
     valid_moves = {"rock", "paper", "scissors", "bomb"}
     if move not in valid_moves:
         return False
-    if move == "bomb" and state.get("user_bomb_used", False):
+    if move == "bomb" and state.get("user_bomb_used", True):
         return False
     return True
 
@@ -71,8 +72,8 @@ def tool_generate_response(state: dict, user_move: str, bot_move: str, winner: s
         round_num = 1
     user_score = state.get("user_score", 0)
     bot_score = state.get("bot_score", 0)
-    if not tool_validate_move(user_move, state):
-        return f"Round {round_num}: Invalid move! You wasted this round.\nScore: You {user_score}, Bot {bot_score}."
+    #if not tool_validate_move(user_move, state):
+     #   return f"Round {round_num}: Invalid move! You wasted this round.\nScore: You {user_score}, Bot {bot_score}."
     if winner == "tie":
         if user_move == bot_move:
             if user_move == "bomb":
@@ -136,16 +137,20 @@ def before_agent_callback(callback_context: CallbackContext):
         else:
             message = "Game over. To play again, type 'restart'."
             return types.Content(role="assistant", parts=[types.Part(text=message)])
-    # Otherwise, process the user's move
+    # Parse and validate move
     move = tool_parse_intent(user_text)
     valid = tool_validate_move(move, state)
+    
     if not valid:
-        bot_move = tool_generate_bot_move(state)
+        # Invalid move - waste the round
+        if move == "bomb" and state.get("user_bomb_used", False):
+            resp = f"Round {state['round']}: You already used your bomb! Invalid move, you wasted this round.\n"
+        else:
+            resp = f"Round {state['round']}: You chose {move} ,I choose {state['bot_move']} Score you: {state['user_score']} me:{state['bot_score']}.\n"
+        resp += f"Score: You {state['user_score']}, Bot {state['bot_score']}."
         state["round"] += 1
         if state["round"] > 3:
             state["game_over"] = True
-        resp = f"Round {state['round']-1}: Invalid move! You wasted this round.\n"
-        resp += f"Score: You {state['user_score']}, Bot {state['bot_score']}."
         if state["game_over"]:
             resp += f"\nGame over! Final Score: You {state['user_score']}, Bot {state['bot_score']}. "
             if state['user_score'] > state['bot_score']:
@@ -156,10 +161,13 @@ def before_agent_callback(callback_context: CallbackContext):
                 resp += "It's a tie!"
             resp += " To play again, type 'restart'."
         return types.Content(role="assistant", parts=[types.Part(text=resp)])
+    
+    # Valid move - proceed with game logic
     bot_move = tool_generate_bot_move(state)
     winner = tool_resolve_round(move, bot_move)
     tool_update_game_state(state, move, bot_move, winner)
     resp = tool_generate_response(state, move, bot_move, winner)
+    
     if state.get("game_over"):
         final = f"\nGame over! Final Score: You {state['user_score']}, Bot {state['bot_score']}. "
         if state['user_score'] > state['bot_score']:
